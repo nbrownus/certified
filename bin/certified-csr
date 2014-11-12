@@ -4,7 +4,7 @@
 #/   --bits=<bits>               bits to use for the private key (defaults to 2048)
 #/   --ca                        request that this certificate be a CA certificate
 #/   --crl-url=<crl-url>         CRL distribution URL for the intermediate CA
-#/   --days=<days>               days until the certificate expires (defaults to 3650)
+#/   --days=<days>               days until the certificate expires (defaults to 365)
 #/   --db=<db>                   OpenSSL database directory
 #/   --encrypt                   encrypt the private key (with <password>, if given)
 #/   --issuer=<issuer>           common name of an alternative CA certificate
@@ -138,6 +138,7 @@ default_bits = $BITS
 default_md = sha256
 distinguished_name = dn
 prompt = no
+req_extensions = x509_extensions
 EOF
     if [ "$SAN_DNS" -o "$SAN_IP" ]
     then cat <<EOF
