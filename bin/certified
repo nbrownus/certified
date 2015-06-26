@@ -11,6 +11,7 @@
 #/   --issuer-name=<issuer-name> filename of the alternative CA certificate (default derived from the alternative CA common name)
 #/   --name=<name>               filename to use (default derived from the certificate common name)
 #/   --no-sign                   do not sign the certificate; stop with a certificate signing request
+#/   --no-private-git            Don't commit the private key to git
 #/   --password=<password>       password for the private key (implies --encrypt)
 #/   --pathlen=<sub CAs>         Number of children CAs that can be issued under this CA, -1 to disable, default 1
 #/   --revoke                    revoke an existing certificate
@@ -48,6 +49,7 @@ do
         --name) NAME="$2" shift 2;;
         --name=*) NAME="$(echo "$1" | cut -d"=" -f"2-")" shift;;
         --no-sign) NO_SIGN="--no-sign" shift;;
+        --no-private-git) NO_PRIVATE_GIT="yes" shift;;
         --password) PASSWORD="$2" shift 2;;
         --password=*) PASSWORD="$(echo "$1" | cut -d"=" -f"2-")" shift;;
         --pathlen) PATHLEN="$2" shift 2;;
@@ -95,13 +97,18 @@ if [ -z "$NO_SIGN" ]
 then certified-crt --days="$DAYS" --db="." --name="$NAME" --ca-password="$CA_PASSWORD" $SELF_SIGNED CN="$CN"
 fi
 
+echo >&2
+log "install this private key on your server"
+cat "private/$NAME.key"
+
+if [ ! -z "$NO_PRIVATE_GIT" ]
+then rm "private/$NAME.key"
+fi
+
 git init -q
 git add "."
 git commit -m"$MESSAGE" -q
 
-echo >&2
-log "install this private key on your server"
-cat "private/$NAME.key"
 echo >&2
 if [ "$NO_SIGN" ]
 then
