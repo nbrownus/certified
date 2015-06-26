@@ -12,6 +12,7 @@
 #/   --name=<name>               filename to use (default derived from the certificate common name)
 #/   --ocsp-url=<ocsp-url>       OCSP responder URL
 #/   --password=<password>       password for the private key (implies --encrypt)
+#/   --pathlen=<sub CAs>         Number of children CAs that can be issued under this CA, -1 to disable, default 1
 #/   C=<country>                 certificate country (defaults to the CA country)
 #/   ST=<state>                  certificate state (defaults to the CA state)
 #/   L=<locality>                certificate locality (usually a city; defaults to the CA locality)
@@ -49,6 +50,8 @@ do
         --ocsp-url=*) OCSP_URL="$(echo "$1" | cut -d"=" -f"2-")" shift;;
         --password) PASSWORD="$2" shift 2;;
         --password=*) PASSWORD="$(echo "$1" | cut -d"=" -f"2-")" shift;;
+        --pathlen) PATHLEN="$2" shift 2;;
+        --pathlen=*) PATHLEN="$(echo "$1" | cut -d"=" -f"2-")" shift;;
 		-h|--help) usage 0;;
 		-*) usage 1;;
         C=*) C="$(echo "$1" | cut -d"=" -f"2-")" shift;;
@@ -94,6 +97,13 @@ fi
 touch "$ISSUER_NAME.db" "$ISSUER_NAME.db.attr"
 if [ ! -f "$ISSUER_NAME.db.serial" ]
 then echo "01" >"$ISSUER_NAME.db.serial"
+fi
+
+if [ -z "$PATHLEN" ]
+then PATHLEN="1"
+fi
+if [ "$PATHLEN" != "-1" ]
+then PATHLEN_STR=", pathlen:$PATHLEN"
 fi
 
 log "configuring OpenSSL"
@@ -164,7 +174,7 @@ EOF
     if_echo "$OCSP_URL" "authorityInfoAccess = OCSP;URI:$OCSP_URL"
     echo "#authorityKeyIdentifier = keyid:always, issuer:always"
     if [ "$CA" ]
-    then echo "basicConstraints = critical, CA:TRUE, pathlen:0"
+    then echo "basicConstraints = critical, CA:TRUE $PATHLEN_STR"
     else echo "basicConstraints = critical, CA:FALSE"
     fi
     if_echo "$CRL_URL" "crlDistributionPoints = URI:$CRL_URL"

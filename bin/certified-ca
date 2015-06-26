@@ -11,6 +11,7 @@
 #/   --root-password=<root-password>                 password for the root CA private key
 #/   --revoke                                        revoke an intermediate CA certificate
 #/   --root-crl-url=<root-crl-url>                   CRL distribution URL for the root CA
+#/   --pathlen=<sub CAs>                             Number of children CAs that can be issued under this CA, -1 to disable, default 1
 #/   C=<country>                                     certificate country
 #/   ST=<state>                                      certificate state (optional)
 #/   L=<locality>                                    certificate locality (usually a city)
@@ -37,6 +38,8 @@ do
         --intermediate-password=*) INTERMEDIATE_PASSWORD="$(echo "$1" | cut -d"=" -f"2-")" shift;;
         --ocsp-url) OCSP_URL="$2" shift 2;;
         --ocsp-url=*) OCSP_URL="$(echo "$1" | cut -d"=" -f"2-")" shift;;
+        --pathlen) PATHLEN="$2" shift 2;;
+        --pathlen=*) PATHLEN="$(echo "$1" | cut -d"=" -f"2-")" shift;;
         --revoke) REVOKE="--revoke" shift;;
         --root-crl-url) ROOT_CRL_URL="$2" shift 2;;
         --root-crl-url=*) ROOT_CRL_URL="$(echo "$1" | cut -d"=" -f"2-")" shift;;
@@ -84,6 +87,13 @@ if [ ! -f "root-ca.db.serial" ]
 then echo "01" >"root-ca.db.serial"
 fi
 
+if [ -z "$PATHLEN" ]
+then PATHLEN="1"
+fi
+if [ "$PATHLEN" != "-1" ]
+then PATHLEN_STR=", pathlen:$PATHLEN"
+fi
+
 {
     cat <<EOF
 : \${BITS:="$BITS"}
@@ -129,7 +139,7 @@ prompt = no
 
 [x509_extensions]
 EOF
-    echo "basicConstraints = critical, CA:TRUE, pathlen:1"
+    echo "basicConstraints = critical, CA:TRUE $PATHLEN_STR"
     cat <<EOF
 keyUsage = critical, cRLSign, keyCertSign, nonRepudiation
 subjectKeyIdentifier = hash
