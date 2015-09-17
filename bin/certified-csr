@@ -148,6 +148,7 @@ default_bits = $BITS
 default_md = sha256
 distinguished_name = dn
 prompt = no
+string_mask = utf8only
 EOF
     if [ "$SAN_DNS" -o "$SAN_IP" ]
     then cat <<EOF
